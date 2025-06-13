@@ -8,6 +8,7 @@ import SettingsPage from './pages/SettingsPage'
 
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from './store/useAuthStore.js'
+import { useChatStore } from './store/useChatStore.js'
 import { useThemeStore } from './store/useThemeStore.js'
 
 import { Loader } from 'lucide-react'
@@ -15,20 +16,32 @@ import { Toaster } from 'react-hot-toast'
 
 const App = () => {
 
-  const {authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers, socket } = useAuthStore();
+  const { subscribeToMessages, unsubscribeFromMessages } = useChatStore();
   const { theme } = useThemeStore();
 
-  console.log('onlineUsers:', onlineUsers); 
+  console.log('onlineUsers:', onlineUsers);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth])
 
+  useEffect(() => {
+    if (authUser && authUser._id && socket) {
+      subscribeToMessages();
+
+      return () => {
+        unsubscribeFromMessages();
+      };
+    }
+  }, [authUser, socket, subscribeToMessages, unsubscribeFromMessages]);
+
+
   console.log('authUser:', authUser);
-  if(isCheckingAuth && !authUser) {
+  if (isCheckingAuth && !authUser) {
     return (
       <div className='flex justify-center items-center h-screen'>
-        <Loader className="size-10 animate-spin"/>
+        <Loader className="size-10 animate-spin" />
       </div>
     )
   }
@@ -45,7 +58,7 @@ const App = () => {
         <Route path='/profile' element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
         <Route path='/settings' element={<SettingsPage />} />
       </Routes>
-      
+
 
       <Toaster />
     </div>

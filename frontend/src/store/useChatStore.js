@@ -16,6 +16,10 @@ export const useChatStore = create((set, get) => ({
         try {
             const res = await axiosInstance.get("/messages/users");
             set({ users: res.data });
+            Notification.requestPermission().then((result) => {
+                console.log(result);
+            });
+
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to fetch users");
             console.error("Error fetching users:", error);
@@ -48,18 +52,32 @@ export const useChatStore = create((set, get) => ({
     },
 
     subscribeToMessages: () => {
-        const { selectedUser } = get();
-        if(!selectedUser) return;
-
         const socket = useAuthStore.getState().socket;
+        const currentUser = useAuthStore.getState().user;
 
-        // todo: optimize later
+        if (!socket) return;
+
+        socket.off("newMessage");
+
         socket.on("newMessage", (newMessage) => {
-            const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-            if(!isMessageSentFromSelectedUser) return;
-            set({messages: [...get().messages, newMessage]});
+            const { selectedUser, messages } = get();
+
+            const isFromSelectedUser = selectedUser && newMessage.senderId === selectedUser._id;
+            const isFromSelf = currentUser && currentUser._id === newMessage.senderId;
+
+            if (isFromSelectedUser) {
+                set({ messages: [...messages, newMessage] });
+            }
+
+            if (!isFromSelf && (!isFromSelectedUser || document.hidden)) {
+                new Notification("New Message", {
+                    body: newMessage.text,
+                    icon: "/chat-icon.png",
+                });
+            }
         });
     },
+
 
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
