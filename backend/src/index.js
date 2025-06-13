@@ -19,9 +19,12 @@ const PORT = process.env.PORT;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.NODE_ENV === "development" ? ["http://localhost:5173"] : ["https://fullstack-chat-app-gray.vercel.app"],
+    origin: process.env.NODE_ENV === "development" 
+        ? "http://localhost:5173" 
+        : "https://fullstack-chat-app-gray.vercel.app",
     credentials: true,
-}))
+}));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
